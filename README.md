@@ -217,6 +217,3 @@ The entire application is a single HTML file with no build tooling, no npm, no b
 1. Open DevTools Application → IndexedDB → confirm private key is stored encrypted
 
 -----
-
-*Built for Frontend Wizards Stage 4B — End-to-End Encrypted App*  
-*Deadline: 5th May, 2026*
