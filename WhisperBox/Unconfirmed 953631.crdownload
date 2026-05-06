@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WhisperBox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Darker+Grotesque:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#0c0c0e;--s1:#131316;--s2:#1c1c21;--s3:#26262d;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#6ee7b7;--accent2:#34d399;--accent-dim:rgba(110,231,183,0.1);--accent-border:rgba(110,231,183,0.25);
+  --red:#f87171;--red-dim:rgba(248,113,113,0.1);
+  --text:#f0f0f2;--t2:#8888a0;--t3:#44445a;
+  --mono:'DM Mono',monospace;--display:'Darker Grotesque',sans-serif;
+  --r:10px;--r2:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--display);font-size:15px;-webkit-font-smoothing:antialiased}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 0.3s}
+#loading.out{opacity:0;pointer-events:none}
+.spin{width:28px;height:28px;border:2px solid var(--s3);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{font-family:var(--mono);font-size:11px;color:var(--t3);letter-spacing:0.5px}
+
+/* AUTH */
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(110,231,183,0.06) 0%,transparent 70%)}
+.card{width:100%;max-width:380px;background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.auth-top{padding:2rem 2rem 1.5rem;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem}
+.logo-icon{width:34px;height:34px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-name{font-size:19px;font-weight:900;letter-spacing:-0.5px}
+.logo-sub{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:1px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:20px;padding:5px 11px;font-family:var(--mono);font-size:10px;color:var(--accent)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 2s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.tabs{display:flex;margin-top:1.25rem;background:var(--bg);border-radius:var(--r2);padding:3px;gap:3px}
+.tab{flex:1;padding:7px;border:none;border-radius:4px;background:transparent;color:var(--t2);font-family:var(--display);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.tab.on{background:var(--s2);color:var(--text)}
+.auth-body{padding:1.5rem 2rem 2rem}
+.fg{margin-bottom:1rem}
+label{display:block;font-family:var(--mono);font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
+input[type=text],input[type=password]{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:var(--display);font-size:14px;font-weight:500;outline:none;transition:border-color 0.15s}
+input:focus{border-color:var(--accent-border)}
+input::placeholder{color:var(--t3)}
+.hint{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:4px}
+.err{font-family:var(--mono);font-size:11px;color:var(--red);margin-top:8px;display:none;background:var(--red-dim);border:1px solid rgba(248,113,113,0.2);border-radius:var(--r2);padding:8px 10px;line-height:1.5}
+.btn{width:100%;padding:11px;border:none;border-radius:var(--r2);background:var(--accent);color:#0c0c0e;font-family:var(--display);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;margin-top:4px}
+.btn:hover{background:var(--accent2)}
+.btn:active{transform:scale(0.98)}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.auth-note{text-align:center;font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:1rem}
+
+/* APP */
+#app{display:none;height:100vh;flex-direction:column}
+#app.on{display:flex}
+.bar{height:50px;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0}
+.bar-l{display:flex;align-items:center;gap:10px}
+.bar-logo{font-size:16px;font-weight:900;letter-spacing:-0.3px}
+.enc-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:20px;padding:3px 8px}
+.bar-r{display:flex;align-items:center;gap:8px}
+.who{font-family:var(--mono);font-size:11px;color:var(--t2);background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:5px}
+.ghost{padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:var(--r2);color:var(--t2);font-family:var(--display);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.ghost:hover{border-color:var(--border2);color:var(--text)}
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.side{width:260px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.side-head{padding:1rem;border-bottom:1px solid var(--border)}
+.side-title{font-family:var(--mono);font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+.srch-wrap{position:relative}
+.srch-row{display:flex;gap:6px}
+.srch-in{flex:1;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:var(--display);font-size:13px;font-weight:500;outline:none;transition:border-color 0.15s}
+.srch-in:focus{border-color:var(--accent-border)}
+.srch-in::placeholder{color:var(--t3)}
+.add-btn{padding:8px 12px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:var(--r2);color:var(--accent);font-size:16px;cursor:pointer;transition:all 0.15s;font-weight:700;line-height:1}
+.add-btn:hover{background:rgba(110,231,183,0.2)}
+.drop{position:absolute;top:100%;left:0;right:0;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r2);margin-top:4px;z-index:50;overflow:hidden;display:none;max-height:240px;overflow-y:auto}
+.drop.show{display:block}
+.dr-item{padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.1s}
+.dr-item:hover{background:var(--s3)}
+.dr-name{font-size:13px;font-weight:600}
+.dr-uname{font-family:var(--mono);font-size:10px;color:var(--t3)}
+.dr-empty{padding:12px;font-family:var(--mono);font-size:11px;color:var(--t3);text-align:center}
+.convos{flex:1;overflow-y:auto;padding:6px}
+.convo{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r2);cursor:pointer;transition:background 0.1s;margin-bottom:1px}
+.convo:hover{background:var(--s2)}
+.convo.active{background:var(--accent-dim);border:1px solid var(--accent-border)}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.ci{flex:1;min-width:0}
+.cn{font-size:13px;font-weight:600}
+.cp{font-family:var(--mono);font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.side-foot{padding:10px 1rem;border-top:1px solid var(--border)}
+.key-info{font-family:var(--mono);font-size:9px;color:var(--t3);line-height:1.8}
+.key-info span{color:var(--accent)}
+
+/* CHAT */
+.chat{flex:1;display:flex;flex-direction:column;background:var(--bg);min-width:0}
+.no-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t3)}
+.no-chat-icon{font-size:36px;opacity:0.15}
+.no-chat p{font-family:var(--mono);font-size:11px}
+.chat-head{padding:12px 1.25rem;background:var(--s1);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.chat-head-info{flex:1}
+.chat-name{font-size:15px;font-weight:700;letter-spacing:-0.2px}
+.chat-sub{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:2px}
+.enc-ind{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:20px;padding:4px 9px}
+.msgs{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;gap:8px;max-width:72%}
+.msg.out{margin-left:auto;flex-direction:row-reverse}
+.m-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px}
+.m-body{min-width:0}
+.bubble{padding:9px 13px;border-radius:13px;font-size:14px;font-weight:500;line-height:1.55;word-break:break-word}
+.msg.in .bubble{background:var(--s2);border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg.out .bubble{background:var(--accent);color:#0c0c0e;border-bottom-right-radius:3px}
+.bubble.fail{background:var(--red-dim);border:1px solid rgba(248,113,113,0.2);color:var(--red);font-family:var(--mono);font-size:11px}
+.m-meta{font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:4px;display:flex;align-items:center;gap:5px}
+.msg.out .m-meta{justify-content:flex-end}
+.enc-tick{color:var(--accent)}
+.input-area{padding:1rem 1.25rem;background:var(--s1);border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
+.input-wrap{flex:1;position:relative}
+textarea{width:100%;padding:9px 38px 9px 13px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--display);font-size:14px;font-weight:500;outline:none;resize:none;line-height:1.5;max-height:110px;min-height:42px;transition:border-color 0.15s}
+textarea:focus{border-color:var(--accent-border)}
+textarea::placeholder{color:var(--t3)}
+.enc-ic{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;opacity:0.2;pointer-events:none}
+.send-btn{padding:9px 18px;background:var(--accent);border:none;border-radius:var(--r2);color:#0c0c0e;font-family:var(--display);font-size:13px;font-weight:700;cursor:pointer;height:42px;transition:all 0.15s;white-space:nowrap}
+.send-btn:hover{background:var(--accent2)}
+.send-btn:disabled{opacity:0.35;cursor:not-allowed}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;padding:9px 14px;border-radius:var(--r2);font-family:var(--mono);font-size:11px;animation:tin 0.2s ease;max-width:300px;line-height:1.5}
+.toast.ok{background:var(--s2);border:1px solid var(--accent-border);color:var(--accent)}
+.toast.bad{background:var(--s2);border:1px solid rgba(248,113,113,0.3);color:var(--red)}
+@keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:2px}
+.c0{background:#6ee7b7;color:#0c0c0e}.c1{background:#818cf8;color:#fff}.c2{background:#fb923c;color:#fff}.c3{background:#f472b6;color:#fff}.c4{background:#38bdf8;color:#fff}.c5{background:#a78bfa;color:#fff}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spin"></div><div class="ltxt" id="ltxt">Starting…</div></div>
+
+<!-- AUTH -->
+<div id="auth">
+  <div class="card">
+    <div class="auth-top">
+      <div class="logo">
+        <div class="logo-icon">🔐</div>
+        <div><div class="logo-name">WhisperBox</div><div class="logo-sub">end-to-end encrypted</div></div>
+      </div>
+      <div class="pill"><div class="dot"></div>Server never sees your messages</div>
+      <div class="tabs">
+        <button class="tab on" id="t-in" onclick="switchTab('in')">Sign in</button>
+        <button class="tab" id="t-up" onclick="switchTab('up')">Register</button>
+      </div>
+    </div>
+    <div class="auth-body">
+      <div id="f-in">
+        <div class="fg"><label>Username</label><input type="text" id="li-u" placeholder="your_username" autocomplete="username"/></div>
+        <div class="fg"><label>Password</label><input type="password" id="li-p" placeholder="••••••••" autocomplete="current-password"/></div>
+        <div class="err" id="li-err"></div>
+        <button class="btn" id="li-btn" onclick="doLogin()">Sign in securely</button>
+      </div>
+      <div id="f-up" style="display:none">
+        <div class="fg">
+          <label>Username</label>
+          <input type="text" id="ru-u" placeholder="e.g. kingsley_emk" autocomplete="username"/>
+          <div class="hint">Letters, digits, _ and - only. No spaces.</div>
+        </div>
+        <div class="fg"><label>Display Name</label><input type="text" id="ru-d" placeholder="e.g. Kingsley"/></div>
+        <div class="fg"><label>Password</label><input type="password" id="ru-p" placeholder="min 6 characters" autocomplete="new-password"/></div>
+        <div class="err" id="ru-err"></div>
+        <button class="btn" id="ru-btn" onclick="doRegister()">Create account</button>
+      </div>
+      <div class="auth-note">Private key never leaves your device</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="bar">
+    <div class="bar-l">
+      <div class="bar-logo">WhisperBox</div>
+      <div class="enc-badge"><div class="dot"></div>E2EE Active</div>
+    </div>
+    <div class="bar-r">
+      <div class="who"><div class="dot"></div><span id="bar-u">—</span></div>
+      <button class="ghost" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="layout">
+    <div class="side">
+      <div class="side-head">
+        <div class="side-title">Messages</div>
+        <div class="srch-wrap">
+          <div class="srch-row">
+            <input class="srch-in" id="srch" type="text" placeholder="Search users…" oninput="onSearch()" onkeydown="onSearchKey(event)"/>
+            <button class="add-btn" onclick="pickFirst()">+</button>
+          </div>
+          <div class="drop" id="drop"></div>
+        </div>
+      </div>
+      <div class="convos" id="convos"></div>
+      <div class="side-foot">
+        <div class="key-info">Keys: <span id="kst">—</span><br>Algo: <span>RSA-OAEP + AES-GCM</span></div>
+      </div>
+    </div>
+    <div class="chat">
+      <div class="no-chat" id="no-chat"><div class="no-chat-icon">🔐</div><p>Search for someone to message</p></div>
+      <div id="active" style="display:none;flex-direction:column;height:100%">
+        <div class="chat-head">
+          <div class="av" id="c-av"></div>
+          <div class="chat-head-info">
+            <div class="chat-name" id="c-name">—</div>
+            <div class="chat-sub" id="c-sub">—</div>
+          </div>
+          <div class="enc-ind"><div class="dot"></div>End-to-End Encrypted</div>
+        </div>
+        <div class="msgs" id="msgs"></div>
+        <div class="input-area">
+          <div class="input-wrap">
+            <textarea id="txt" placeholder="Message… (encrypted before sending)" onkeydown="onKey(event)" oninput="resize(this)" rows="1"></textarea>
+            <div class="enc-ic">🔒</div>
+          </div>
+          <button class="send-btn" id="sbtn" onclick="sendMsg()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://whisperbox.koyeb.app';
+let me = null, tok = null, myPriv = null, myPub = null;
+let peer = null;       // current open chat peer
+let convos = {};       // { [userId]: { peer, messages[] } }
+let results = [];      // search results
+let pollTmr = null, srchTmr = null;
+
+// ── CRYPTO ────────────────────────────────────────────────────────────────────
+const enc = s => new TextEncoder().encode(s);
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const d64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function genKeys() {
+  return crypto.subtle.generateKey(
+    {name:'RSA-OAEP',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},
+    true,['encrypt','decrypt']
+  );
+}
+async function exportPub(k) {
+  return b64(await crypto.subtle.exportKey('spki',k));
+}
+async function importPub(b) {
+  return crypto.subtle.importKey('spki',d64(b),{name:'RSA-OAEP',hash:'SHA-256'},false,['encrypt']);
+}
+async function wrapKey(priv, pw) {
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const km=await crypto.subtle.importKey('raw',enc(pw),'PBKDF2',false,['deriveKey']);
+  const wk=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['wrapKey']);
+  const w=await crypto.subtle.wrapKey('pkcs8',priv,wk,{name:'AES-GCM',iv});
+  return {wrapped:b64(w),salt:b64(salt.buffer),iv:b64(iv.buffer)};
+}
+async function unwrapKey(data, pw) {
+  const salt=d64(data.salt),iv=d64(data.iv),w=d64(data.wrapped);
+  const km=await crypto.subtle.importKey('raw',enc(pw),'PBKDF2',false,['deriveKey']);
+  const wk=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['unwrapKey']);
+  return crypto.subtle.unwrapKey('pkcs8',w,wk,{name:'AES-GCM',iv},{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt']);
+}
+async function encrypt(text, recipPub, senderPub) {
+  const aes=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt']);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},aes,enc(text));
+  const raw=await crypto.subtle.exportKey('raw',aes);
+  const ekR=await crypto.subtle.encrypt({name:'RSA-OAEP'},recipPub,raw);
+  const ekS=await crypto.subtle.encrypt({name:'RSA-OAEP'},senderPub,raw);
+  return {ciphertext:b64(ct),iv:b64(iv.buffer),encryptedKey:b64(ekR),encryptedKeyForSelf:b64(ekS)};
+}
+async function decrypt(payload, priv, isSender) {
+  const ek=d64(isSender?payload.encryptedKeyForSelf:payload.encryptedKey);
+  const raw=await crypto.subtle.decrypt({name:'RSA-OAEP'},priv,ek);
+  const aes=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['decrypt']);
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:d64(payload.iv)},aes,d64(payload.ciphertext));
+  return new TextDecoder().decode(plain);
+}
+
+// ── INDEXEDDB ─────────────────────────────────────────────────────────────────
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('wb3',1);r.onupgradeneeded=e=>e.target.result.createObjectStore('k');r.onsuccess=e=>res(e.target.result);r.onerror=()=>rej(r.error);})}
+async function dbSet(key,val){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction('k','readwrite');tx.objectStore('k').put(val,key);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);})}
+async function dbGet(key){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction('k','readonly');const r=tx.objectStore('k').get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);})}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(path,method='GET',body=null){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(tok) opts.headers['Authorization']='Bearer '+tok;
+  if(body) opts.body=JSON.stringify(body);
+  const res=await fetch(API+path,opts);
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok){
+    const det=data.detail;
+    let msg;
+    if(Array.isArray(det)) msg=det.map(e=>(e.loc?e.loc.slice(-1)[0]+': ':'')+e.msg).join(' | ');
+    else if(typeof det==='string') msg=det;
+    else msg=data.message||data.error||`HTTP ${res.status}`;
+    console.error('[API]',method,path,res.status,JSON.stringify(data));
+    throw new Error(msg);
+  }
+  return data;
+}
+function getToken(r){return r?.access_token||r?.token||r?.jwt||r?.data?.access_token||null}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function switchTab(t){
+  ['in','up'].forEach(x=>{
+    document.getElementById('t-'+x).classList.toggle('on',x===t);
+    document.getElementById('f-'+x).style.display=x===t?'block':'none';
+  });
+}
+
+async function doRegister(){
+  const u=document.getElementById('ru-u').value.trim();
+  const d=document.getElementById('ru-d').value.trim();
+  const p=document.getElementById('ru-p').value;
+  const errEl=document.getElementById('ru-err');
+  const btn=document.getElementById('ru-btn');
+  errEl.style.display='none';
+  if(!u||!d||!p) return showErr(errEl,'All fields required');
+  if(!/^[a-zA-Z0-9_-]+$/.test(u)) return showErr(errEl,'Username: letters, digits, _ and - only');
+  if(p.length<6) return showErr(errEl,'Password minimum 6 characters');
+  btn.disabled=true;
+  try{
+    setLoad('Generating key pair…');
+    const kp=await genKeys();
+    const pub=await exportPub(kp.publicKey);
+    const wrap=await wrapKey(kp.privateKey,p);
+
+    setLoad('Registering…');
+    const regRes=await api('/auth/register','POST',{
+      username:u, display_name:d, password:p,
+      public_key:pub,
+      wrapped_private_key:wrap.wrapped,
+      pbkdf2_salt:wrap.salt,
+      pbkdf2_iv:wrap.iv
+    });
+    console.log('[register]',regRes);
+
+    let t=getToken(regRes);
+    if(!t){const lr=await api('/auth/login','POST',{username:u,password:p});t=getToken(lr);}
+    if(!t) throw new Error('Registered but got no token');
+    tok=t;
+
+    await dbSet('k:'+u,wrap);
+    myPriv=kp.privateKey; myPub=kp.publicKey;
+
+    setLoad('Loading profile…');
+    const prof=await api('/auth/me');
+    console.log('[me]',prof);
+    me={id:prof.id||prof.user_id||prof._id, username:prof.username, display_name:prof.display_name||prof.username};
+    boot();
+  }catch(e){setLoadHide();showErr(errEl,e.message);}
+  finally{btn.disabled=false;btn.textContent='Create account';}
+}
+
+async function doLogin(){
+  const u=document.getElementById('li-u').value.trim();
+  const p=document.getElementById('li-p').value;
+  const errEl=document.getElementById('li-err');
+  const btn=document.getElementById('li-btn');
+  errEl.style.display='none';
+  if(!u||!p) return showErr(errEl,'All fields required');
+  btn.disabled=true;btn.textContent='Signing in…';
+  try{
+    const lr=await api('/auth/login','POST',{username:u,password:p});
+    const t=getToken(lr);
+    if(!t) throw new Error('No token returned — try again');
+    tok=t;
+    console.log('[login]',lr);
+
+    setLoad('Decrypting key…');
+    let wrap=await dbGet('k:'+u);
+    if(!wrap){
+      // Fetch from server (stored during registration)
+      const prof=await api('/auth/me');
+      wrap={wrapped:prof.wrapped_private_key,salt:prof.pbkdf2_salt,iv:prof.pbkdf2_iv};
+      if(!wrap.wrapped) throw new Error('No key found on this device. Please re-register.');
+      await dbSet('k:'+u,wrap);
+    }
+    myPriv=await unwrapKey(wrap,p);
+
+    setLoad('Loading profile…');
+    const prof=await api('/auth/me');
+    me={id:prof.id||prof.user_id||prof._id, username:prof.username, display_name:prof.display_name||prof.username};
+    myPub=await importPub(prof.public_key);
+    boot();
+  }catch(e){setLoadHide();showErr(errEl,e.message);btn.disabled=false;btn.textContent='Sign in securely';}
+}
+
+function doLogout(){
+  if(pollTmr)clearInterval(pollTmr);
+  tok=null;me=null;myPriv=null;myPub=null;peer=null;convos={};results=[];
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('auth').style.display='flex';
+  document.getElementById('li-btn').disabled=false;
+  document.getElementById('li-btn').textContent='Sign in securely';
+  document.getElementById('li-p').value='';
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+function boot(){
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').classList.add('on');
+  document.getElementById('bar-u').textContent=me.display_name||me.username;
+  document.getElementById('kst').textContent='Active ✓';
+  setLoadHide();
+  renderConvos();
+  pollTmr=setInterval(poll,4000);
+}
+
+// ── USER SEARCH ───────────────────────────────────────────────────────────────
+async function onSearch(){
+  const q=document.getElementById('srch').value.trim();
+  const drop=document.getElementById('drop');
+  if(!q){drop.classList.remove('show');return;}
+  clearTimeout(srchTmr);
+  srchTmr=setTimeout(async()=>{
+    try{
+      // Correct endpoint: /users/search?q=
+      const res=await api('/users/search?q='+encodeURIComponent(q));
+      const arr=Array.isArray(res)?res:(res.users||res.results||res.data||[]);
+      results=arr.filter(u=>(u.id||u.user_id)!==me.id);
+      renderDrop();
+    }catch(e){
+      console.warn('[search]',e.message);
+      results=[];
+      renderDrop();
+    }
+  },350);
+}
+
+function renderDrop(){
+  const drop=document.getElementById('drop');
+  if(!results.length){
+    drop.innerHTML='<div class="dr-empty">No users found</div>';
+  }else{
+    drop.innerHTML=results.map((u,i)=>{
+      const uid=u.id||u.user_id;
+      const name=u.username||u.name;
+      const disp=u.display_name||name;
+      return `<div class="dr-item" onclick="openPeer(${i})">
+        <div class="av c${col(uid)} " style="width:28px;height:28px;font-size:11px">${disp[0].toUpperCase()}</div>
+        <div><div class="dr-name">${esc(disp)}</div><div class="dr-uname">@${esc(name)}</div></div>
+      </div>`;
+    }).join('');
+  }
+  drop.classList.add('show');
+}
+
+function onSearchKey(e){if(e.key==='Enter')pickFirst();if(e.key==='Escape')document.getElementById('drop').classList.remove('show');}
+function pickFirst(){if(results.length>0)openPeer(0);}
+
+async function openPeer(idx){
+  const u=results[idx];if(!u)return;
+  const uid=u.id||u.user_id;
+  const username=u.username||u.name;
+  const display=u.display_name||username;
+  document.getElementById('drop').classList.remove('show');
+  document.getElementById('srch').value='';
+
+  setLoad('Loading public key…');
+  try{
+    // Correct endpoint: /users/{user_id}/public-key
+    const pkRes=await api('/users/'+uid+'/public-key');
+    console.log('[pubkey for',username,']', JSON.stringify(pkRes));
+    // Dig through nested response to find the key string
+    let pubB64 = pkRes.public_key || pkRes.publicKey || pkRes.key;
+    if(!pubB64 && typeof pkRes === 'object') {
+      // Search one level deep
+      for(const v of Object.values(pkRes)) {
+        if(typeof v === 'string' && v.length > 100) { pubB64 = v; break; }
+        if(typeof v === 'object' && v !== null) {
+          const inner = v.public_key || v.publicKey || v.key;
+          if(inner) { pubB64 = inner; break; }
+        }
+      }
+    }
+    if(!pubB64) throw new Error('No public key found. Response was: ' + JSON.stringify(pkRes));
+    const pubKey=await importPub(pubB64);
+    const p={id:uid,username,display_name:display,pubKey};
+    if(!convos[uid]) convos[uid]={peer:p,messages:[]};
+    else convos[uid].peer=p;
+    peer=p;
+    setLoadHide();
+    renderConvos();
+    showChat();
+    await loadMsgs();
+  }catch(e){setLoadHide();toast(e.message,'bad');console.error('[openPeer]',e);}
+}
+
+// ── MESSAGES ──────────────────────────────────────────────────────────────────
+async function loadMsgs(){
+  if(!peer)return;
+  try{
+    // Correct endpoint: /conversations/{user_id}/messages
+    const res=await api('/conversations/'+peer.id+'/messages');
+    const list=Array.isArray(res)?res:(res.messages||res.data||[]);
+    const prev=convos[peer.id]?.messages?.length||0;
+    const out=[];
+    for(const m of list){
+      const mid=m.id||m._id||m.message_id;
+      const existing=convos[peer.id]?.messages?.find(x=>x.id===mid);
+      if(existing){out.push(existing);continue;}
+            if(out.length<3) console.log('[message sample '+out.length+']', JSON.stringify(m));
+      const senderId = m.sender_id||m.from_id||(m.sender&&m.sender.id)||m.sender;
+      const senderName = m.sender_username||m.sender_name||(m.sender&&m.sender.username)||m.from;
+      const isMe = senderId===me.id || senderName===me.username;
+      let text='';let failed=false;
+      try{
+        const raw = m.payload||m.content;
+        const p = (typeof raw==='string')?JSON.parse(raw):raw;
+        if(p&&p.ciphertext&&p.iv){
+          try{ text=await decrypt(p,myPriv,isMe); }
+          catch(e1){
+            try{ text=await decrypt(p,myPriv,!isMe); console.warn('[decrypt] flipped isSender worked, isMe was:',isMe); }
+            catch(e2){ throw new Error('Both keys failed: '+e1.message); }
+          }
+        }else{
+          text=typeof raw==='string'?raw:JSON.stringify(raw);
+        }
+      }catch(e){failed=true;text='[Could not decrypt: '+e.message+']';console.error('[decrypt]',e.message);}
+      out.push({id:mid||Math.random(),sender:isMe?'me':'them',text,failed,ts:m.created_at||m.timestamp||''});
+    }
+    convos[peer.id].messages=out;
+    renderMsgs();
+    if(out.length>prev)scrollBot();
+  }catch(e){console.warn('[loadMsgs]',e.message);}
+}
+
+async function sendMsg(){
+  const el=document.getElementById('txt');
+  const text=el.value.trim();
+  if(!text||!peer)return;
+  const btn=document.getElementById('sbtn');
+  btn.disabled=true;el.value='';el.style.height='';
+  try{
+    const payload=await encrypt(text,peer.pubKey,myPub);
+    await api('/messages','POST',{to:peer.id, payload:payload});
+    convos[peer.id].messages.push({id:'l'+Date.now(),sender:'me',text,failed:false,ts:new Date().toISOString()});
+    renderMsgs();scrollBot();renderConvos();
+  }catch(e){toast('Send failed: '+e.message,'bad');el.value=text;}
+  btn.disabled=false;
+}
+
+async function poll(){if(peer)await loadMsgs();}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderConvos(){
+  const el=document.getElementById('convos');
+  const keys=Object.keys(convos);
+  if(!keys.length){
+    el.innerHTML='<div style="padding:2rem 1rem;text-align:center;font-family:var(--mono);font-size:10px;color:var(--t3)">Search for someone to message</div>';
+    return;
+  }
+  el.innerHTML=keys.map(uid=>{
+    const c=convos[uid];
+    const last=c.messages[c.messages.length-1];
+    const prev=last?(last.failed?'🔒 encrypted':(last.sender==='me'?'You: ':'')+last.text.slice(0,26)+(last.text.length>26?'…':'')):'🔒 Start chatting';
+    return `<div class="convo${peer?.id===uid?' active':''}" onclick="switchPeer('${uid}')">
+      <div class="av c${col(uid)}">${(c.peer.display_name||c.peer.username)[0].toUpperCase()}</div>
+      <div class="ci"><div class="cn">${esc(c.peer.display_name||c.peer.username)}</div><div class="cp">${esc(prev)}</div></div>
+    </div>`;
+  }).join('');
+}
+
+async function switchPeer(uid){
+  const c=convos[uid];if(!c)return;
+  peer=c.peer;renderConvos();showChat();renderMsgs();scrollBot();await loadMsgs();
+}
+
+function showChat(){
+  document.getElementById('no-chat').style.display='none';
+  const ac=document.getElementById('active');
+  ac.style.display='flex';
+  const c=col(peer.id);
+  const av=document.getElementById('c-av');
+  av.textContent=(peer.display_name||peer.username)[0].toUpperCase();
+  av.className='av c'+c;
+  document.getElementById('c-name').textContent=peer.display_name||peer.username;
+  document.getElementById('c-sub').textContent='@'+peer.username;
+  document.getElementById('txt').focus();
+}
+
+function renderMsgs(){
+  const msgs=convos[peer?.id]?.messages||[];
+  const el=document.getElementById('msgs');
+  if(!msgs.length){el.innerHTML='<div style="margin:auto;font-family:var(--mono);font-size:10px;color:var(--t3)">No messages yet 🔒</div>';return;}
+  el.innerHTML=msgs.map(m=>{
+    const isMe=m.sender==='me';
+    const c=isMe?col(me.id):col(peer.id);
+    const init=isMe?(me.display_name||me.username)[0]:(peer.display_name||peer.username)[0];
+    return `<div class="msg ${isMe?'out':'in'}">
+      <div class="m-av c${c}">${init.toUpperCase()}</div>
+      <div class="m-body">
+        <div class="bubble${m.failed?' fail':''}">${esc(m.text)}</div>
+        <div class="m-meta"><span>${fmtT(m.ts)}</span><span class="enc-tick">🔒 E2EE</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function scrollBot(){const e=document.getElementById('msgs');e.scrollTop=e.scrollHeight;}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px';}
+function showErr(el,msg){el.textContent=msg;el.style.display='block';}
+function setLoad(msg){document.getElementById('loading').classList.remove('out');document.getElementById('ltxt').textContent=msg;}
+function setLoadHide(){document.getElementById('loading').classList.add('out');}
+function col(s){if(!s)return 0;let h=0;for(let i=0;i<String(s).length;i++)h=(h*31+String(s).charCodeAt(i))|0;return Math.abs(h)%6;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtT(iso){try{return new Date(iso).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}catch{return ''}}
+function toast(msg,type='ok'){const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),3500);}
+
+setLoadHide();
+document.addEventListener('click',e=>{if(!e.target.closest('.srch-wrap'))document.getElementById('drop').classList.remove('show');});
+</script>
+</body>
+</html>
